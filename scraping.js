@@ -1,7 +1,9 @@
 const puppeteer = require("puppeteer");
 
 async function scrapeEmail(url) {
-  let emailSelector = '.business-email-id a[href^="mailto:"]';
+  //.company-all-details
+  //.business-email-id a[href^="mailto:"]
+  let emailSelector = ".company-all-details";
   const browser = await puppeteer.launch({
     headless: "new", // Set to true for headless mode
   });
@@ -17,12 +19,20 @@ async function scrapeEmail(url) {
     const elements = await page.$$eval(emailSelector, (elems) => {
       return elems.map((element) => {
         return {
-          Email: element.textContent.trim(),
+          Email: element
+            .querySelector('.business-email-id a[href^="mailto:"]')
+            .textContent.trim(),
+          //business-contact a[href^="tel:"]
+          Contact: element
+            .querySelector('.business-contact a[href^="tel:"]')
+            .textContent.trim(),
         };
       });
     });
-    return elements[0].Email;
-    console.log(elements);
+    return {
+      Email: elements[0].Email,
+      Contact: elements[0].Contact,
+    };
   } catch (error) {
     console.error("Error:", error);
     // Handle the error as needed

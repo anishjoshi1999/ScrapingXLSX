@@ -22,11 +22,12 @@ async function processData() {
     const location = jsonData[i].Location;
     const url = jsonData[i].URL;
     try {
-      const Email = await scrapeEmail(url);
+      const { Email, Contact } = await scrapeEmail(url);
       jsonData[i].Email = Email;
+      jsonData[i].Contact = Contact;
       // Now you can do whatever you want with the data
       console.log(
-        `Title: ${title}, Email: ${Email}, Location: ${location}, URL: ${url}`
+        `Title: ${title}, Email: ${Email}, Contact: ${Contact}, Location: ${location}, URL: ${url}`
       );
       // Update the XLSX file with the modified data
       const updatedSheet = XLSX.utils.json_to_sheet(jsonData);
