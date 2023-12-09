@@ -1,45 +1,42 @@
-const puppeteer = require("puppeteer");
+const axios = require("axios");
+const cheerio = require("cheerio");
 
-async function scrapeEmail(url) {
-  //.company-all-details
-  //.business-email-id a[href^="mailto:"]
-  let emailSelector = ".company-all-details";
-  const browser = await puppeteer.launch({
-    headless: "new", // Set to true for headless mode
-  });
-  const page = await browser.newPage();
-
+// Function to extract email addresses from a website using regex
+async function getEmailsFromWebsite(url) {
   try {
-    await page.goto(url, {
-      waitUntil: "domcontentloaded",
-    });
-    await page.waitForSelector(emailSelector);
-    const parsedUrl = new URL(url);
+    const response = await axios.get(url);
+    const html = response.data;
 
-    const elements = await page.$$eval(emailSelector, (elems) => {
-      return elems.map((element) => {
-        return {
-          Email: element
-            .querySelector('.business-email-id a[href^="mailto:"]')
-            .textContent.trim(),
-          //business-contact a[href^="tel:"]
-          Contact: element
-            .querySelector('.business-contact a[href^="tel:"]')
-            .textContent.trim(),
-        };
-      });
-    });
-    return {
-      Email: elements[0].Email,
-      Contact: elements[0].Contact,
-    };
+    // Use cheerio to load the HTML content
+    const $ = cheerio.load(html);
+
+    // Extract email addresses using regex
+    const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+    const emails = html.match(emailRegex) || [];
+
+    const uniqueEmails = [...new Set(emails)];
+
+    return { url, emails: uniqueEmails };
   } catch (error) {
-    console.error("Error:", error);
-    // Handle the error as needed
-  } finally {
-    await browser.close();
+    return { url, error: "Empty" };
   }
 }
-module.exports = {
-  scrapeEmail,
-};
+
+// Function to process a single website
+async function processWebsite(url) {
+  try {
+    const result = await getEmailsFromWebsite(url);
+
+    if (result.error) {
+      console.error(`Error fetching or parsing ${result.url}:`, result.error);
+    } else {
+      let temp = result.emails.join(", ");
+      return temp;
+    }
+  } catch (error) {
+    console.error("Error processing website:", error);
+  }
+}
+
+// Export the processWebsite function for use in other modules
+module.exports = { processWebsite };
